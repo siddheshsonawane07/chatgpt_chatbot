@@ -1,8 +1,9 @@
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:chatgpt/chat_message.dart';
-import 'package:chatgpt/threedots.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,10 +24,6 @@ class _HomePageState extends State<HomePage> {
   ChatGPT? chatGPT;
 
   StreamSubscription? _subscription;
-
-  bool _isTyping = false;
-
-  bool _apiNoResponse = false;
 
   @override
   void initState() {
@@ -62,7 +59,6 @@ class _HomePageState extends State<HomePage> {
 
     setState(() {
       _messages.insert(0, message);
-      _isTyping = true;
     });
 
     _controller.clear();
@@ -76,7 +72,6 @@ class _HomePageState extends State<HomePage> {
         .listen((response) {
       if (response == null) {
         Fluttertoast.showToast(msg: "API dead ! ");
-        _apiNoResponse = true;
         return;
       }
 
@@ -90,26 +85,20 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void apiDead() {
-    Fluttertoast.showToast(msg: "Error");
-  }
-
   void insertNewData(String response) {
     Chat_Message botMessage = Chat_Message(
       text: response,
       sender: "bot",
     );
 
+    // ignore: unnecessary_null_comparison
     if (botMessage.text == null ||
-        response == _messages[_messages.length - 1].text) {
+        response == _messages[0].text) {
       print("empty response || same response");
-      _apiNoResponse = true;
       return;
     }
 
     setState(() {
-      _isTyping = false;
-      _apiNoResponse = false;
       _messages.insert(0, botMessage);
     });
   }
@@ -168,7 +157,7 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
             ),
-            if (_isTyping == true && _apiNoResponse == false) const ThreeDots(),
+            // if (_apiNoResponse == false) const ThreeDots(),
             const Divider(
               height: 1.0,
             ),
