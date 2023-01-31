@@ -22,6 +22,7 @@ class _HomePageState extends State<HomePage> {
   final List<Chat_Message> _messages = [];
 
   ChatGPT? chatGPT;
+  int index = 0;
 
   StreamSubscription? _subscription;
 
@@ -52,13 +53,13 @@ class _HomePageState extends State<HomePage> {
     if (_messages.isNotEmpty) {
       if (message.text == _messages[0].text) {
         Fluttertoast.showToast(msg: "Same Query");
-        print("resolved duplication query");
         return;
       }
     }
 
     setState(() {
       _messages.insert(0, message);
+      index++;
     });
 
     _controller.clear();
@@ -75,7 +76,8 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
-      if (response.choices[0].text == _messages[_messages.length - 1].text) {
+      if (response.choices[0].text == _messages[index].text) {
+        Fluttertoast.showToast(msg: "Same Query");
         return;
       }
 
@@ -83,6 +85,10 @@ class _HomePageState extends State<HomePage> {
 
       insertNewData(response!.choices[0].text);
     });
+
+    if (request == null) {
+      Fluttertoast.showToast(msg: "NULL ");
+    }
   }
 
   void insertNewData(String response) {
@@ -92,8 +98,7 @@ class _HomePageState extends State<HomePage> {
     );
 
     // ignore: unnecessary_null_comparison
-    if (botMessage.text == null ||
-        response == _messages[0].text) {
+    if (botMessage.text == null || response == _messages[0].text) {
       print("empty response || same response");
       return;
     }
@@ -157,7 +162,6 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
             ),
-            // if (_apiNoResponse == false) const ThreeDots(),
             const Divider(
               height: 1.0,
             ),
