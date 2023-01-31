@@ -26,6 +26,8 @@ class _HomePageState extends State<HomePage> {
 
   bool _isTyping = false;
 
+  bool _apiNoResponse = false;
+
   @override
   void initState() {
     super.initState();
@@ -35,7 +37,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    chatGPT!.genImgClose();
     _subscription?.cancel();
     super.dispose();
   }
@@ -43,12 +44,21 @@ class _HomePageState extends State<HomePage> {
   void _sendMessage() {
     if (_controller.text.isEmpty) {
       Fluttertoast.showToast(msg: "Write something");
+      return;
     }
 
     Chat_Message message = Chat_Message(
       text: _controller.text,
       sender: "user",
     );
+
+    if (_messages.isNotEmpty) {
+      if (message.text == _messages[0].text) {
+        Fluttertoast.showToast(msg: "Same Query");
+        print("resolved duplication query");
+        return;
+      }
+    }
 
     setState(() {
       _messages.insert(0, message);
@@ -64,9 +74,24 @@ class _HomePageState extends State<HomePage> {
         .onCompleteStream(request: request)
         .asBroadcastStream()
         .listen((response) {
+      if (response == null) {
+        Fluttertoast.showToast(msg: "API dead ! ");
+        _apiNoResponse = true;
+        return;
+      }
+
+      if (response.choices[0].text == _messages[_messages.length - 1].text) {
+        return;
+      }
+
       Vx.log(response!.choices[0].text);
-      insertNewData(response.choices[0].text);
+
+      insertNewData(response!.choices[0].text);
     });
+  }
+
+  void apiDead() {
+    Fluttertoast.showToast(msg: "Error");
   }
 
   void insertNewData(String response) {
@@ -75,8 +100,16 @@ class _HomePageState extends State<HomePage> {
       sender: "bot",
     );
 
+    if (botMessage.text == null ||
+        response == _messages[_messages.length - 1].text) {
+      print("empty response || same response");
+      _apiNoResponse = true;
+      return;
+    }
+
     setState(() {
       _isTyping = false;
+      _apiNoResponse = false;
       _messages.insert(0, botMessage);
     });
   }
@@ -135,7 +168,7 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
             ),
-            if (_isTyping) const ThreeDots(),
+            if (_isTyping == true && _apiNoResponse == false) const ThreeDots(),
             const Divider(
               height: 1.0,
             ),
