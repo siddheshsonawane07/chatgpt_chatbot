@@ -24,7 +24,6 @@ class _HomePageState extends State<HomePage> {
 
   StreamSubscription? _subscription;
 
-
   bool _isTyping = false;
 
   @override
@@ -58,19 +57,19 @@ class _HomePageState extends State<HomePage> {
 
     _controller.clear();
 
-      final request = CompleteReq(
-          prompt: message.text, model: kTranslateModelV3, max_tokens: 200);
+    final request = CompleteReq(
+        prompt: message.text, model: kTranslateModelV3, max_tokens: 200);
 
-      _subscription = chatGPT!
-          .onCompleteStream(request: request)
-          .asBroadcastStream()
-          .listen((response) {
-        Vx.log(response!.choices[0].text);
-        insertNewData(response.choices[0].text, isImage: false);
-      });
+    _subscription = chatGPT!
+        .onCompleteStream(request: request)
+        .asBroadcastStream()
+        .listen((response) {
+      Vx.log(response!.choices[0].text);
+      insertNewData(response.choices[0].text);
+    });
   }
 
-  void insertNewData(String response, {bool isImage = false}) {
+  void insertNewData(String response) {
     Chat_Message botMessage = Chat_Message(
       text: response,
       sender: "bot",
@@ -84,29 +83,30 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildTextComposer() {
     return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                onSubmitted: (value) => _sendMessage(),
-                decoration: const InputDecoration.collapsed(
-                    hintText: "Write your query"),
+      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              onSubmitted: (value) => _sendMessage(),
+              decoration:
+                  const InputDecoration.collapsed(hintText: "Write your query"),
+            ),
+          ),
+          ButtonBar(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.send),
+                onPressed: () {
+                  _sendMessage();
+                },
               ),
-            ),
-            ButtonBar(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: () {
-                    _sendMessage();
-                  },
-                ),
-              ],
-            ),
-          ],
-        ).px16(),);
+            ],
+          ),
+        ],
+      ).px16(),
+    );
   }
 
   @override
