@@ -24,6 +24,8 @@ class Chat_Message extends StatelessWidget {
             .box
             .color(sender == "user" ? Vx.red200 : Vx.green200)
             .p16
+            .rounded
+            .alignCenter
             .makeCentered(),
         Expanded(
           child: isImage
@@ -40,6 +42,6 @@ class Chat_Message extends StatelessWidget {
               : text.trim().text.bodyText1(context).make().px8(),
         ),
       ],
-    );
+    ).py8();
   }
 }

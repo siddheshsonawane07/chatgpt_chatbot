@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:chatgpt/chat_message.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:velocity_x/velocity_x.dart';
 
@@ -19,29 +20,63 @@ class _HomePageState extends State<HomePage> {
   final List<Chat_Message> _messages = [];
 
   ChatGPT? chatGPT;
+
   StreamSubscription? _subscription;
+
+  bool _isImageSearch = false;
+
+  bool _isTyping = false;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+    chatGPT = ChatGPT.instance
+        .builder("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");
   }
 
   @override
   void dispose() {
+    chatGPT!.genImgClose();
     _subscription?.cancel();
     super.dispose();
   }
 
   void _sendMessage() {
-    Chat_Message messsage =
-        Chat_Message(text: _controller.text, sender: "user");
+    if (_controller.text.isEmpty) {
+      Fluttertoast.showToast(msg: "Write something");
+    }
+
+    Chat_Message message = Chat_Message(
+      text: _controller.text,
+      sender: "user",
+      isImage: false,
+    );
 
     setState(() {
-      _messages.insert(0, messsage);
+      _messages.insert(0, message);
+      _isTyping = true;
     });
 
     _controller.clear();
+
+    final request = CompleteReq(
+        prompt: message.text, model: kTranslateModelV3, max_tokens: 200);
+
+    // ignore: non_constant_identifier_names
+    _subscription = chatGPT!
+        .builder("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",
+            orgId: "")
+        .onCompleteStream(request: request)
+        .listen((response) {
+      Vx.log(response!.choices[0].text);
+      // ignore: non_constant_identifier_names
+      Chat_Message bot_message =
+          Chat_Message(text: response.choices[0].text, sender: "bot");
+
+      setState(() {
+        _messages.insert(0, bot_message);
+      });
+    });
   }
 
   Widget _buildTextComposer() {
@@ -83,14 +118,15 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
             Flexible(
-                child: ListView.builder(
-              reverse: true,
-              padding: Vx.m8,
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                return _messages[index];
-              },
-            )),
+              child: ListView.builder(
+                reverse: true,
+                padding: Vx.m8,
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  return _messages[index];
+                },
+              ),
+            ),
             Container(
               decoration: BoxDecoration(color: context.cardColor),
               child: _buildTextComposer(),
