@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:chatgpt/chat_message.dart';
+import 'package:chatgpt/threedots.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,7 +24,6 @@ class _HomePageState extends State<HomePage> {
 
   StreamSubscription? _subscription;
 
-  bool _isImageSearch = false;
 
   bool _isTyping = false;
 
@@ -49,7 +49,6 @@ class _HomePageState extends State<HomePage> {
     Chat_Message message = Chat_Message(
       text: _controller.text,
       sender: "user",
-      isImage: false,
     );
 
     setState(() {
@@ -59,46 +58,55 @@ class _HomePageState extends State<HomePage> {
 
     _controller.clear();
 
-    final request = CompleteReq(
-        prompt: message.text, model: kTranslateModelV3, max_tokens: 200);
+      final request = CompleteReq(
+          prompt: message.text, model: kTranslateModelV3, max_tokens: 200);
 
-    // ignore: non_constant_identifier_names
-    _subscription = chatGPT!
-        .builder("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",
-            orgId: "")
-        .onCompleteStream(request: request)
-        .listen((response) {
-      Vx.log(response!.choices[0].text);
-      // ignore: non_constant_identifier_names
-      Chat_Message bot_message =
-          Chat_Message(text: response.choices[0].text, sender: "bot");
-
-      setState(() {
-        _messages.insert(0, bot_message);
+      _subscription = chatGPT!
+          .onCompleteStream(request: request)
+          .asBroadcastStream()
+          .listen((response) {
+        Vx.log(response!.choices[0].text);
+        insertNewData(response.choices[0].text, isImage: false);
       });
+  }
+
+  void insertNewData(String response, {bool isImage = false}) {
+    Chat_Message botMessage = Chat_Message(
+      text: response,
+      sender: "bot",
+    );
+
+    setState(() {
+      _isTyping = false;
+      _messages.insert(0, botMessage);
     });
   }
 
   Widget _buildTextComposer() {
     return Padding(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              onSubmitted: (value) => _sendMessage(),
-              decoration:
-                  const InputDecoration.collapsed(hintText: "Write your query"),
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                onSubmitted: (value) => _sendMessage(),
+                decoration: const InputDecoration.collapsed(
+                    hintText: "Write your query"),
+              ),
             ),
-          ),
-          IconButton(
-            onPressed: () => {_sendMessage()},
-            icon: const Icon(Icons.send),
-          )
-        ],
-      ),
-    );
+            ButtonBar(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: () {
+                    _sendMessage();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ).px16(),);
   }
 
   @override
@@ -126,6 +134,10 @@ class _HomePageState extends State<HomePage> {
                   return _messages[index];
                 },
               ),
+            ),
+            if (_isTyping) const ThreeDots(),
+            const Divider(
+              height: 1.0,
             ),
             Container(
               decoration: BoxDecoration(color: context.cardColor),
